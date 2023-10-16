@@ -1,3 +1,5 @@
+*.dol
+*.dol.xz
 *.nds
 *.nds.xz
 *.3dsx
@@ -23,3 +25,4 @@ switch/build
 switch-classic/build
 switch/romfs/*.zst
 switch/romfs/shaders/*.dksh
+gamecube/build

@@ -1,8 +1,8 @@
 .PHONY: all all-classic format clean
 .PHONY: dslink 3dslink 3dslink-classic nxlink-classic
-.PHONY: nds 3dsx cia nro linux
+.PHONY: dol nds 3dsx cia nro linux
 .PHONY: 3dsx-classic cia-classic nro-classic
-.PHONY: release release-nds release-3dsx release-cia release-nro
+.PHONY: release release-dol release-nds release-3dsx release-cia release-nro
 .PHONY: release-3dsx-classic release-cia-classic release-nro-classic
 
 export GITREV  := $(shell git rev-parse HEAD 2>/dev/null | cut -c1-6)
@@ -12,9 +12,9 @@ export VERSION_MICRO := 0
 export VERSION := $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_MICRO)
 
 ###########################################################################
-all: nds 3dsx nro linux
+all: dol nds 3dsx nro linux
 
-all-classic: nds 3dsx-classic nro-classic linux
+all-classic: dol nds 3dsx-classic nro-classic linux
 
 format:
 	@clang-format -style=file -i $(filter-out \
@@ -36,13 +36,14 @@ format:
 		, $(shell find source include -type f -name \*.c -o -name \*.cpp -o -name \*.h))
 
 clean:
+	@$(MAKE) -f Makefile.dol clean
 	@$(MAKE) -f Makefile.nds clean
 	@$(MAKE) -f Makefile.3ds clean
 	@$(MAKE) -f Makefile.3ds clean CLASSIC="-DCLASSIC"
 	@$(MAKE) -f Makefile.switch clean
 	@$(MAKE) -f Makefile.switch clean CLASSIC="-DCLASSIC"
 	@$(MAKE) -f Makefile.linux clean
-	@$(RM) ftpd.nds.xz ftpd*.3dsx.xz ftpd*.cia.xz ftpd*.nro.xz
+	@$(RM) ftpd.dol.xz ftpd.nds.xz ftpd*.3dsx.xz ftpd*.cia.xz ftpd*.nro.xz
 
 ###########################################################################
 dslink:
@@ -61,6 +62,9 @@ nxlink-classic:
 	@$(MAKE) -f Makefile.switch nxlink CLASSIC="-DCLASSIC"
 
 ###########################################################################
+dol:
+	@$(MAKE) -f Makefile.gamecube CLASSIC="-DCLASSIC"
+
 nds:
 	@$(MAKE) -f Makefile.nds CLASSIC="-DCLASSIC"
 
@@ -86,12 +90,15 @@ linux:
 	@$(MAKE) -f Makefile.linux
 
 ###########################################################################
-release: release-nds \
+release: release-dol \
+		release-nds \
 		release-3dsx release-3dsx-classic \
 		release-cia release-cia-classic \
 		release-nro release-nro-classic
 	@$(RM) -r release
 	@mkdir release
+	@xz -c <gamecube/ftpd.dol >release/ftpd.dol.xz
+	@ln -s ../gamecube/ftpd.dol release/ftpd.dol
 	@xz -c <nds/ftpd.nds >release/ftpd.nds.xz
 	@ln -s ../nds/ftpd.nds release/ftpd.nds
 	@xz -c <3ds/ftpd.3dsx >release/ftpd.3dsx.xz
@@ -106,6 +113,9 @@ release: release-nds \
 	@ln -s ../switch/ftpd.nro release/ftpd.nro
 	@xz -c <switch-classic/ftpd-classic.nro >release/ftpd-classic.nro.xz
 	@ln -s ../switch-classic/ftpd-classic.nro release/ftpd-classic.nro
+
+release-dol:
+	@$(MAKE) -f Makefile.gamecube DEFINES=-DNDEBUG OPTIMIZE="-O3 -flto"
 
 release-nds:
 	@$(MAKE) -f Makefile.nds DEFINES=-DNDEBUG OPTIMIZE="-O3 -flto"
