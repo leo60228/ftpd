@@ -20,15 +20,26 @@
 
 #pragma once
 
+#ifdef GEKKO
+#include <network.h>
+#else
 #include <netinet/in.h>
 #include <sys/socket.h>
+#endif
 
 #include <cstdint>
 
-#ifdef NDS
+#if defined(NDS)
 struct sockaddr_storage
 {
 	unsigned short ss_family;
+	char ss_data[sizeof (struct sockaddr_in) - sizeof (unsigned short)];
+};
+#elif defined(GEKKO)
+struct sockaddr_storage
+{
+	u8 ss_len;
+	u8 ss_family;
 	char ss_data[sizeof (struct sockaddr_in) - sizeof (unsigned short)];
 };
 #endif

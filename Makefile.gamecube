@@ -25,15 +25,17 @@ INCLUDES	:=	include
 # options for code generation
 #---------------------------------------------------------------------------------
 
-CFLAGS		= -g -O2 -Wall $(MACHDEP) $(INCLUDE)
-CXXFLAGS	= $(CFLAGS)
+CFLAGS		= -g -O2 -Wall $(MACHDEP) $(INCLUDE) \
+              -DSTATUS_STRING="\"ftpd v$(VERSION)\"" \
+              -DNO_IPV6 -DCLASSIC -DFTPDCONFIG="\"/config/ftpd/ftpd.cfg\""
+CXXFLAGS	= $(CFLAGS) -Wno-register
 
 LDFLAGS		= -g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-logc -lm
+LIBS	:=	-lbba -lfat -lm -logc
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing

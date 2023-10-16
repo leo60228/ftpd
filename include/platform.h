@@ -35,7 +35,7 @@
 #include <functional>
 #include <memory>
 
-#ifdef CLASSIC
+#if defined(CLASSIC) && !defined(GEKKO)
 extern PrintConsole g_statusConsole;
 extern PrintConsole g_logConsole;
 extern PrintConsole g_sessionConsole;
@@ -107,7 +107,7 @@ struct steady_clock
 using steady_clock = std::chrono::steady_clock;
 #endif
 
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 /// \brief Platform thread
 class Thread
 {

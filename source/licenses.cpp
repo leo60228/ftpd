@@ -26,7 +26,7 @@
 #include <zstd.h>
 #endif
 
-#if !defined(NDS) && !defined(__3DS__) && !defined(__SWITCH__)
+#if !defined(GEKKO) && !defined(NDS) && !defined(__3DS__) && !defined(__SWITCH__)
 #include <GLFW/glfw3.h>
 #endif
 

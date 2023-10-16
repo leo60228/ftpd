@@ -186,7 +186,7 @@ UniqueFtpConfig FtpConfig::load (char const *const path_)
 	return config;
 }
 
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 std::scoped_lock<platform::Mutex> FtpConfig::lockGuard ()
 {
 	return std::scoped_lock<platform::Mutex> (m_lock);

@@ -20,7 +20,11 @@
 
 #include "sockAddr.h"
 
+#ifdef GEKKO
+#include <network.h>
+#else
 #include <arpa/inet.h>
+#endif
 
 #include <cassert>
 #include <cstdlib>
@@ -65,7 +69,7 @@ SockAddr::SockAddr (struct sockaddr_in const &addr_)
 	assert (m_addr.ss_family == AF_INET);
 }
 
-#ifndef __3DS__
+#ifndef NO_IPV6
 SockAddr::SockAddr (struct sockaddr_in6 const &addr_)
     : SockAddr (reinterpret_cast<struct sockaddr const &> (addr_))
 {
@@ -84,7 +88,7 @@ SockAddr::operator struct sockaddr_in const & () const
 	return reinterpret_cast<struct sockaddr_in const &> (m_addr);
 }
 
-#ifndef __3DS__
+#ifndef NO_IPV6
 SockAddr::operator struct sockaddr_in6 const & () const
 {
 	assert (m_addr.ss_family == AF_INET6);
@@ -150,7 +154,7 @@ char const *SockAddr::name (char *buffer_, std::size_t size_) const
 	switch (m_addr.ss_family)
 	{
 	case AF_INET:
-#ifdef NDS
+#if defined(NDS) || defined(GEKKO)
 		return inet_ntoa (reinterpret_cast<struct sockaddr_in const *> (&m_addr)->sin_addr);
 #else
 		return inet_ntop (AF_INET,
@@ -175,7 +179,7 @@ char const *SockAddr::name (char *buffer_, std::size_t size_) const
 
 char const *SockAddr::name () const
 {
-#ifdef NDS
+#if defined(NDS) || defined(GEKKO)
 	return inet_ntoa (reinterpret_cast<struct sockaddr_in const *> (&m_addr)->sin_addr);
 #else
 #ifdef NO_IPV6

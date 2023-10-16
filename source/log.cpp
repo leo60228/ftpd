@@ -28,6 +28,10 @@
 #include <ranges>
 #include <vector>
 
+#ifdef GEKKO
+#include <ogc/consol.h>
+#endif
+
 namespace
 {
 #ifdef __3DS__
@@ -71,7 +75,7 @@ struct Message
 /// \brief Log messages
 std::vector<Message> s_messages;
 
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 /// \brief Log lock
 platform::Mutex s_lock;
 #endif
@@ -79,7 +83,7 @@ platform::Mutex s_lock;
 
 void drawLog ()
 {
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 	auto const lock = std::scoped_lock (s_lock);
 #endif
 
@@ -90,11 +94,17 @@ void drawLog ()
 	s_logUpdated = false;
 #endif
 
+#ifdef GEKKO
+	int cols = 0;
+	int maxLogs = 0;
+	CON_GetMetrics(&cols, &maxLogs);
+#else
 	auto const maxLogs =
 #ifdef CLASSIC
 	    g_logConsole.windowHeight;
 #else
 	    MAX_LOGS;
+#endif
 #endif
 
 	if (s_messages.size () > static_cast<unsigned> (maxLogs))
@@ -114,10 +124,12 @@ void drawLog ()
 	};
 
 	auto it = std::begin (s_messages);
+#ifndef GEKKO
 	if (s_messages.size () > static_cast<unsigned> (g_logConsole.windowHeight))
 		it = std::next (it, s_messages.size () - g_logConsole.windowHeight);
 
 	consoleSelect (&g_logConsole);
+#endif
 	while (it != std::end (s_messages))
 	{
 		std::fputs (s_colors[it->level], stdout);
@@ -153,7 +165,7 @@ void drawLog ()
 #ifndef CLASSIC
 std::string getLog ()
 {
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 	auto const lock = std::scoped_lock (s_lock);
 #endif
 
@@ -237,14 +249,14 @@ void addLog (LogLevel const level_, char const *const fmt_, va_list ap_)
 		return;
 #endif
 
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 	thread_local
 #endif
 	    static char buffer[1024];
 
 	std::vsnprintf (buffer, sizeof (buffer), fmt_, ap_);
 
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 	auto const lock = std::scoped_lock (s_lock);
 #endif
 #ifndef NDEBUG
@@ -272,7 +284,7 @@ void addLog (LogLevel const level_, std::string_view const message_)
 			c = '?';
 	}
 
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 	auto const lock = std::scoped_lock (s_lock);
 #endif
 #ifndef NDEBUG

@@ -32,7 +32,11 @@
 #include <dswifi9.h>
 #endif
 
+#ifdef GEKKO
+#include <network.h>
+#else
 #include <arpa/inet.h>
+#endif
 #include <sys/statvfs.h>
 #include <unistd.h>
 
@@ -46,7 +50,7 @@
 #include <thread>
 using namespace std::chrono_literals;
 
-#ifdef NDS
+#if defined(NDS) || defined(GEKKO)
 #define LOCKED(x) x
 #else
 #define LOCKED(x)                                                                                  \
@@ -62,7 +66,7 @@ namespace
 /// \brief Application start time
 auto const s_startTime = std::time (nullptr);
 
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 /// \brief Mutex for s_freeSpace
 platform::Mutex s_lock;
 #endif
@@ -163,7 +167,7 @@ FtpServer::~FtpServer ()
 {
 	m_quit = true;
 
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 	m_thread.join ();
 #endif
 
@@ -182,33 +186,35 @@ FtpServer::~FtpServer ()
 
 FtpServer::FtpServer (UniqueFtpConfig config_) : m_config (std::move (config_)), m_quit (false)
 {
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 	m_thread = platform::Thread (std::bind (&FtpServer::threadFunc, this));
 #endif
 }
 
 void FtpServer::draw ()
 {
-#ifdef NDS
+#if defined(NDS) || defined(GEKKO)
 	loop ();
 #endif
 
 #ifdef CLASSIC
 	{
 		char port[7];
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 		auto const lock = std::scoped_lock (m_lock);
 #endif
 		if (m_socket)
 			std::sprintf (port, ":%u", m_socket->sockName ().port ());
 
+#ifndef GEKKO
 		consoleSelect (&g_statusConsole);
 		std::printf ("\x1b[0;0H\x1b[32;1m%s \x1b[36;1m%s%s",
 		    STATUS_STRING,
 		    m_socket ? m_socket->sockName ().name () : "Waiting on WiFi",
 		    m_socket ? port : "");
+#endif
 
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 		char timeBuffer[16];
 		auto const now = std::time (nullptr);
 		std::strftime (timeBuffer, sizeof (timeBuffer), "%H:%M:%S", std::localtime (&now));
@@ -216,30 +222,36 @@ void FtpServer::draw ()
 		std::printf (" \x1b[37;1m%s", timeBuffer);
 #endif
 
+#ifndef GEKKO
 		std::fputs ("\x1b[K", stdout);
 		std::fflush (stdout);
+#endif
 	}
 
 	{
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 		auto const lock = std::scoped_lock (s_lock);
 #endif
 		if (!s_freeSpace.empty ())
 		{
+#ifndef GEKKO
 			consoleSelect (&g_statusConsole);
 			std::printf ("\x1b[0;%uH\x1b[32;1m%s",
 			    static_cast<unsigned> (g_statusConsole.windowWidth - s_freeSpace.size () + 1),
 			    s_freeSpace.c_str ());
+#endif
 			std::fflush (stdout);
 		}
 	}
 
 	{
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 		auto const lock = std::scoped_lock (m_lock);
 #endif
+#ifndef GEKKO
 		consoleSelect (&g_sessionConsole);
 		std::fputs ("\x1b[2J", stdout);
+#endif
 		for (auto &session : m_sessions)
 		{
 			session->draw ();
@@ -332,7 +344,7 @@ UniqueFtpServer FtpServer::create ()
 
 std::string FtpServer::getFreeSpace ()
 {
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 	auto const lock = std::scoped_lock (s_lock);
 #endif
 	return s_freeSpace;
@@ -350,7 +362,7 @@ void FtpServer::updateFreeSpace ()
 
 	auto freeSpace = fs::printSize (static_cast<std::uint64_t> (st.f_bsize) * st.f_bfree);
 
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 	auto const lock = std::scoped_lock (s_lock);
 #endif
 	if (freeSpace != s_freeSpace)
@@ -371,7 +383,7 @@ void FtpServer::handleNetworkFound ()
 	std::uint16_t port;
 
 	{
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 		auto const lock = m_config->lockGuard ();
 #endif
 		port = m_config->port ();
@@ -439,7 +451,7 @@ void FtpServer::showMenu ()
 
 			if (ImGui::MenuItem ("Upload Log"))
 			{
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 				auto const lock = std::scoped_lock (m_lock);
 #endif
 				if (!m_uploadLogCurlM)
@@ -501,7 +513,7 @@ void FtpServer::showMenu ()
 	{
 		if (!prevShowSettings)
 		{
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 			auto const lock = m_config->lockGuard ();
 #endif
 
@@ -634,7 +646,7 @@ void FtpServer::showSettings ()
 			m_showSettings = false;
 			ImGui::CloseCurrentPopup ();
 
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 			auto const lock = m_config->lockGuard ();
 #endif
 
@@ -659,7 +671,7 @@ void FtpServer::showSettings ()
 
 		if (save)
 		{
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 			auto const lock = m_config->lockGuard ();
 #endif
 			if (!m_config->save (FTPDCONFIG))
@@ -732,7 +744,7 @@ void FtpServer::showAbout ()
 			ImGui::TreePop ();
 		}
 
-#if defined(NDS)
+#if defined(NDS) || defined(GEKKO)
 #elif defined(__3DS__)
 		if (ImGui::TreeNode (g_libctruVersion))
 		{
@@ -891,7 +903,7 @@ void FtpServer::loop ()
 		std::vector<UniqueFtpSession> deadSessions;
 		{
 			// remove dead sessions
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 			auto const lock = std::scoped_lock (m_lock);
 #endif
 			auto it = std::begin (m_sessions);
@@ -915,7 +927,7 @@ void FtpServer::loop ()
 		if (!FtpSession::poll (m_sessions))
 			handleNetworkLost ();
 	}
-#ifndef NDS
+#if !defined(NDS) && !defined(GEKKO)
 	// avoid busy polling in background thread
 	else
 		platform::Thread::sleep (16ms);
