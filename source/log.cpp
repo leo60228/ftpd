@@ -135,12 +135,11 @@ void drawLog ()
 #endif
 	while (it != std::end (s_messages))
 	{
-		printf ("%s%s", s_colors[it->level], it->message.c_str());
+		std::fputs (s_colors[it->level], stdout);
+		std::fputs (it->message.c_str (), stdout);
 		++it;
 	}
-#ifndef GEKKO
 	std::fflush (stdout);
-#endif
 	s_messages.clear ();
 #else
 	ImVec4 const s_colors[] = {
