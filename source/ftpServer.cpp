@@ -223,8 +223,10 @@ void FtpServer::draw ()
 		std::printf (" \x1b[37;1m%s", timeBuffer);
 #endif
 
-		std::fputs ("\x1b[K", stdout);
+		printf ("\x1b[K");
+#ifndef GEKKO
 		std::fflush (stdout);
+#endif
 	}
 
 	{
@@ -244,7 +246,9 @@ void FtpServer::draw ()
 			std::printf ("\x1b[0;%uH\x1b[32;1m%s",
 			    static_cast<unsigned> (cols - s_freeSpace.size () + 1),
 			    s_freeSpace.c_str ());
+#ifndef GEKKO
 			std::fflush (stdout);
+#endif
 		}
 	}
 
@@ -260,9 +264,11 @@ void FtpServer::draw ()
 		{
 			session->draw ();
 			if (&session != &m_sessions.back ())
-				std::fputc ('\n', stdout);
+				printf ("\n");
 		}
+#ifndef GEKKO
 		std::fflush (stdout);
+#endif
 	}
 
 	drawLog ();

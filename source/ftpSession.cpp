@@ -340,11 +340,10 @@ void FtpSession::draw ()
 #ifdef CLASSIC
 	if (m_filePosition)
 	{
-		std::fputs (fs::printSize (m_filePosition).c_str (), stdout);
-		std::fputc (' ', stdout);
+		printf ("%s ", fs::printSize (m_filePosition).c_str ());
 	}
 
-	std::fputs (m_workItem.empty () ? m_cwd.c_str () : m_workItem.c_str (), stdout);
+	printf ("%s", m_workItem.empty () ? m_cwd.c_str () : m_workItem.c_str ());
 #else
 #ifdef __3DS__
 	ImGui::BeginChild (m_windowName.c_str (), ImVec2 (0.0f, 45.0f), true);
