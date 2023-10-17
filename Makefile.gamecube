@@ -104,6 +104,9 @@ $(BUILD):
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile.gamecube
 
 #---------------------------------------------------------------------------------
+wiiload: $(BUILD)
+	@wiiload $(OUTPUT).dol
+#---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
 	@rm -fr $(BUILD) $(OUTPUT).elf $(OUTPUT).dol

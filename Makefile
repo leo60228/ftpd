@@ -46,6 +46,9 @@ clean:
 	@$(RM) ftpd.dol.xz ftpd.nds.xz ftpd*.3dsx.xz ftpd*.cia.xz ftpd*.nro.xz
 
 ###########################################################################
+wiiload:
+	@$(MAKE) -f Makefile.gamecube wiiload
+
 dslink:
 	@$(MAKE) -f Makefile.nds dslink
 
