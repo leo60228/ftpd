@@ -47,6 +47,10 @@ Socket::~Socket ()
 #ifdef NDS
 	if (::closesocket (m_fd) != 0)
 		error ("closesocket: %s\n", std::strerror (errno));
+#elif defined(GEKKO)
+	int err = ::net_close (m_fd);
+	if (err != 0)
+		error ("net_close: %s\n", std::strerror (-err));
 #else
 	if (::close (m_fd) != 0)
 		error ("close: %s\n", std::strerror (errno));
@@ -73,14 +77,19 @@ UniqueSocket Socket::accept ()
 
 #ifdef GEKKO
 	auto const fd = ::net_accept (m_fd, addr, &addrLen);
+	if (fd < 0)
+	{
+		error ("net_accept: %s\n", std::strerror (-fd));
+		return nullptr;
+	}
 #else
 	auto const fd = ::accept (m_fd, addr, &addrLen);
-#endif
 	if (fd < 0)
 	{
 		error ("accept: %s\n", std::strerror (errno));
 		return nullptr;
 	}
+#endif
 
 	info ("Accepted connection from [%s]:%u\n", addr.name (), addr.port ());
 	return UniqueSocket (new Socket (fd, m_sockName, addr));
@@ -103,18 +112,24 @@ int Socket::atMark ()
 
 bool Socket::bind (SockAddr const &addr_)
 {
+	int err;
 	switch (static_cast<struct sockaddr_storage const &> (addr_).ss_family)
 	{
 	case AF_INET:
 #ifdef GEKKO
-		if (::net_bind (m_fd, (struct sockaddr*) (const sockaddr*) addr_, sizeof (struct sockaddr_in)) != 0)
+		err = ::net_bind (m_fd, (struct sockaddr*) (const sockaddr*) addr_, sizeof (struct sockaddr_in));
+		if (err != 0)
+		{
+			error ("net_bind: %s\n", std::strerror (-err));
+			return false;
+		}
 #else
 		if (::bind (m_fd, addr_, sizeof (struct sockaddr_in)) != 0)
-#endif
 		{
 			error ("bind: %s\n", std::strerror (errno));
 			return false;
 		}
+#endif
 		break;
 
 #ifndef NO_IPV6
@@ -138,11 +153,13 @@ bool Socket::bind (SockAddr const &addr_)
 		// get socket name due to request for ephemeral port
 		socklen_t addrLen = sizeof (struct sockaddr_storage);
 #ifdef GEKKO
-		if (::net_getsockname (m_fd, m_sockName, &addrLen) != 0)
+		int err = ::net_getsockname (m_fd, m_sockName, &addrLen);
+		if (err != 0)
+			error ("net_getsockname: %s\n", std::strerror (-err));
 #else
 		if (::getsockname (m_fd, m_sockName, &addrLen) != 0)
-#endif
 			error ("getsockname: %s\n", std::strerror (errno));
+#endif
 	}
 	else
 		m_sockName = addr_;
@@ -153,10 +170,21 @@ bool Socket::bind (SockAddr const &addr_)
 bool Socket::connect (SockAddr const &addr_)
 {
 #ifdef GEKKO
-	if (::net_connect (m_fd, (struct sockaddr*) (const sockaddr*) addr_, sizeof (struct sockaddr_storage)) != 0)
+	int err = ::net_connect (m_fd, (struct sockaddr*) (const sockaddr*) addr_, sizeof (struct sockaddr_storage));
+	if (err != 0)
+	{
+		if (errno != EINPROGRESS)
+			error ("net_connect: %s\n", std::strerror (-err));
+		else
+		{
+			m_peerName  = addr_;
+			m_connected = true;
+			info ("Connecting to [%s]:%u\n", addr_.name (), addr_.port ());
+		}
+		return false;
+	}
 #else
 	if (::connect (m_fd, addr_, sizeof (struct sockaddr_storage)) != 0)
-#endif
 	{
 		if (errno != EINPROGRESS)
 			error ("connect: %s\n", std::strerror (errno));
@@ -168,6 +196,7 @@ bool Socket::connect (SockAddr const &addr_)
 		}
 		return false;
 	}
+#endif
 
 	m_peerName  = addr_;
 	m_connected = true;
@@ -178,14 +207,19 @@ bool Socket::connect (SockAddr const &addr_)
 bool Socket::listen (int const backlog_)
 {
 #ifdef GEKKO
-	if (::net_listen (m_fd, backlog_) != 0)
+	int err = ::net_listen (m_fd, backlog_);
+	if (err != 0)
+	{
+		error ("net_listen: %s\n", std::strerror (-err));
+		return false;
+	}
 #else
 	if (::listen (m_fd, backlog_) != 0)
-#endif
 	{
 		error ("listen: %s\n", std::strerror (errno));
 		return false;
 	}
+#endif
 
 	m_listening = true;
 	return true;
@@ -194,14 +228,19 @@ bool Socket::listen (int const backlog_)
 bool Socket::shutdown (int const how_)
 {
 #ifdef GEKKO
-	if (::net_shutdown (m_fd, how_) != 0)
+	int err = ::net_shutdown (m_fd, how_);
+	if (err != 0)
+	{
+		error ("net_shutdown: %s\n", std::strerror (-err));
+		return false;
+	}
 #else
 	if (::shutdown (m_fd, how_) != 0)
-#endif
 	{
 		error ("shutdown: %s\n", std::strerror (errno));
 		return false;
 	}
+#endif
 
 	return true;
 }
@@ -237,14 +276,19 @@ bool Socket::setNonBlocking (bool const nonBlocking_)
 
 #ifdef GEKKO
 	auto const rc = ::net_ioctl (m_fd, FIONBIO, &enable);
+	if (rc != 0)
+	{
+		error ("fcntl(FIONBIO, %d): %s\n", nonBlocking_, std::strerror (-rc));
+		return false;
+	}
 #else
 	auto const rc = ::ioctl (m_fd, FIONBIO, &enable);
-#endif
 	if (rc != 0)
 	{
 		error ("fcntl(FIONBIO, %d): %s\n", nonBlocking_, std::strerror (errno));
 		return false;
 	}
+#endif
 #else
 	auto flags = ::fcntl (m_fd, F_GETFL, 0);
 	if (flags == -1)
@@ -272,14 +316,19 @@ bool Socket::setReuseAddress (bool const reuse_)
 {
 	int const reuse = reuse_;
 #ifdef GEKKO
-	if (::net_setsockopt (m_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof (reuse)) != 0)
+	int err = ::net_setsockopt (m_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof (reuse));
+	if (err != 0)
+	{
+		error ("net_setsockopt(SO_REUSEADDR, %s): %s\n", reuse_ ? "yes" : "no", std::strerror (-err));
+		return false;
+	}
 #else
 	if (::setsockopt (m_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof (reuse)) != 0)
-#endif
 	{
 		error ("setsockopt(SO_REUSEADDR, %s): %s\n", reuse_ ? "yes" : "no", std::strerror (errno));
 		return false;
 	}
+#endif
 
 	return true;
 }
@@ -288,14 +337,19 @@ bool Socket::setRecvBufferSize (std::size_t const size_)
 {
 	int const size = size_;
 #ifdef GEKKO
-	if (::net_setsockopt (m_fd, SOL_SOCKET, SO_RCVBUF, &size, sizeof (size)) != 0)
+	int err = ::net_setsockopt (m_fd, SOL_SOCKET, SO_RCVBUF, &size, sizeof (size));
+	if (err != 0)
+	{
+		error ("net_setsockopt(SO_RCVBUF, %zu): %s\n", size_, std::strerror (-err));
+		return false;
+	}
 #else
 	if (::setsockopt (m_fd, SOL_SOCKET, SO_RCVBUF, &size, sizeof (size)) != 0)
-#endif
 	{
 		error ("setsockopt(SO_RCVBUF, %zu): %s\n", size_, std::strerror (errno));
 		return false;
 	}
+#endif
 
 	return true;
 }
@@ -304,14 +358,19 @@ bool Socket::setSendBufferSize (std::size_t const size_)
 {
 	int const size = size_;
 #ifdef GEKKO
-	if (::net_setsockopt (m_fd, SOL_SOCKET, SO_SNDBUF, &size, sizeof (size)) != 0)
+	int err = ::net_setsockopt (m_fd, SOL_SOCKET, SO_SNDBUF, &size, sizeof (size));
+	if (err != 0)
+	{
+		error ("net_setsockopt(SO_SNDBUF, %zu): %s\n", size_, std::strerror (-err));
+		return false;
+	}
 #else
 	if (::setsockopt (m_fd, SOL_SOCKET, SO_SNDBUF, &size, sizeof (size)) != 0)
-#endif
 	{
 		error ("setsockopt(SO_SNDBUF, %zu): %s\n", size_, std::strerror (errno));
 		return false;
 	}
+#endif
 
 	return true;
 }
@@ -324,11 +383,13 @@ std::make_signed_t<std::size_t>
 
 #ifdef GEKKO
 	auto const rc = ::net_recv (m_fd, buffer_, size_, 0);
+	if (rc < 0 && rc != -EWOULDBLOCK && rc != -EAGAIN)
+		error ("net_recv: %s\n", std::strerror (-rc));
 #else
 	auto const rc = ::recv (m_fd, buffer_, size_, oob_ ? MSG_OOB : 0);
-#endif
 	if (rc < 0 && errno != EWOULDBLOCK)
 		error ("recv: %s\n", std::strerror (errno));
+#endif
 
 	return rc;
 }
@@ -337,11 +398,7 @@ std::make_signed_t<std::size_t> Socket::read (IOBuffer &buffer_, bool const oob_
 {
 	assert (buffer_.freeSize () > 0);
 
-#ifdef GEKKO
-	auto const rc = net_read (m_fd, buffer_.freeArea (), buffer_.freeSize ());
-#else
 	auto const rc = read (buffer_.freeArea (), buffer_.freeSize (), oob_);
-#endif
 	if (rc > 0)
 		buffer_.markUsed (rc);
 
@@ -355,11 +412,13 @@ std::make_signed_t<std::size_t> Socket::write (void const *const buffer_, std::s
 
 #ifdef GEKKO
 	auto const rc = ::net_send (m_fd, buffer_, size_, 0);
+	if (rc < 0 && rc != -EWOULDBLOCK && rc != -EAGAIN)
+		error ("net_send: %s\n", std::strerror (-rc));
 #else
 	auto const rc = ::send (m_fd, buffer_, size_, 0);
-#endif
 	if (rc < 0 && errno != EWOULDBLOCK)
 		error ("send: %s\n", std::strerror (errno));
+#endif
 
 	return rc;
 }
@@ -368,11 +427,7 @@ std::make_signed_t<std::size_t> Socket::write (IOBuffer &buffer_)
 {
 	assert (buffer_.usedSize () > 0);
 
-#ifdef GEKKO
-	auto const rc = net_write (m_fd, buffer_.usedArea (), buffer_.usedSize ());
-#else
 	auto const rc = write (buffer_.usedArea (), buffer_.usedSize ());
-#endif
 	if (rc > 0)
 		buffer_.markFree (rc);
 
@@ -393,14 +448,19 @@ UniqueSocket Socket::create ()
 {
 #ifdef GEKKO
 	auto const fd = ::net_socket (AF_INET, SOCK_STREAM, 0);
+	if (fd < 0)
+	{
+		error ("net_socket: %s\n", std::strerror (-fd));
+		return nullptr;
+	}
 #else
 	auto const fd = ::socket (AF_INET, SOCK_STREAM, 0);
-#endif
 	if (fd < 0)
 	{
 		error ("socket: %s\n", std::strerror (errno));
 		return nullptr;
 	}
+#endif
 
 	return UniqueSocket (new Socket (fd));
 }

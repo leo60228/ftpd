@@ -206,15 +206,13 @@ void FtpServer::draw ()
 		if (m_socket)
 			std::sprintf (port, ":%u", m_socket->sockName ().port ());
 
-#ifndef GEKKO
 		consoleSelect (&g_statusConsole);
 		std::printf ("\x1b[0;0H\x1b[32;1m%s \x1b[36;1m%s%s",
 		    STATUS_STRING,
 		    m_socket ? m_socket->sockName ().name () : "Waiting on WiFi",
 		    m_socket ? port : "");
-#endif
 
-#if !defined(NDS) && !defined(GEKKO)
+#if !defined(NDS)
 		char timeBuffer[16];
 		auto const now = std::time (nullptr);
 		std::strftime (timeBuffer, sizeof (timeBuffer), "%H:%M:%S", std::localtime (&now));
@@ -222,10 +220,8 @@ void FtpServer::draw ()
 		std::printf (" \x1b[37;1m%s", timeBuffer);
 #endif
 
-#ifndef GEKKO
 		std::fputs ("\x1b[K", stdout);
 		std::fflush (stdout);
-#endif
 	}
 
 	{

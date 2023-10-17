@@ -35,7 +35,19 @@
 #include <functional>
 #include <memory>
 
-#if defined(CLASSIC) && !defined(GEKKO)
+#if defined(CLASSIC)
+#ifdef GEKKO
+struct PrintConsole
+{
+	int consoleWidth;
+	int consoleHeight;
+	int windowWidth;
+	int windowHeight;
+};
+
+PrintConsole *consoleSelect(PrintConsole *console);
+#endif
+
 extern PrintConsole g_statusConsole;
 extern PrintConsole g_logConsole;
 extern PrintConsole g_sessionConsole;

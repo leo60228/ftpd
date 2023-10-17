@@ -38,6 +38,10 @@
 #error "Gamecube must be built in classic mode"
 #endif
 
+PrintConsole g_statusConsole;
+PrintConsole g_logConsole;
+PrintConsole g_sessionConsole;
+
 namespace
 {
 /// \brief Thread stack size
@@ -45,6 +49,16 @@ constexpr auto STACK_SIZE = 0x8000;
 
 /// \brief Host address
 struct in_addr s_addr = {0};
+
+/// \brief Current console
+PrintConsole *currentConsole = NULL;
+}
+
+PrintConsole *consoleSelect(PrintConsole *console)
+{
+	PrintConsole *tmp = currentConsole;
+	currentConsole = console;
+	return tmp;
 }
 
 bool platform::networkVisible ()
@@ -77,6 +91,12 @@ bool platform::init ()
 	GXRModeObj* rmode = VIDEO_GetPreferredMode(NULL);
 	framebuffer = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
 	console_init(framebuffer,20,20,rmode->fbWidth,rmode->xfbHeight,rmode->fbWidth*VI_DISPLAY_PIX_SZ);
+
+	CON_GetMetrics(&g_statusConsole.consoleWidth, &g_statusConsole.consoleHeight);
+	g_statusConsole.windowWidth = g_statusConsole.consoleWidth;
+	g_statusConsole.windowHeight = g_statusConsole.consoleHeight;
+	g_logConsole = g_statusConsole;
+	g_sessionConsole = g_statusConsole;
 	
 	VIDEO_Configure(rmode);
 	VIDEO_SetNextFramebuffer(framebuffer);

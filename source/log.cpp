@@ -94,17 +94,11 @@ void drawLog ()
 	s_logUpdated = false;
 #endif
 
-#ifdef GEKKO
-	int cols = 0;
-	int maxLogs = 0;
-	CON_GetMetrics(&cols, &maxLogs);
-#else
 	auto const maxLogs =
 #ifdef CLASSIC
 	    g_logConsole.windowHeight;
 #else
 	    MAX_LOGS;
-#endif
 #endif
 
 	if (s_messages.size () > static_cast<unsigned> (maxLogs))
@@ -124,12 +118,10 @@ void drawLog ()
 	};
 
 	auto it = std::begin (s_messages);
-#ifndef GEKKO
 	if (s_messages.size () > static_cast<unsigned> (g_logConsole.windowHeight))
 		it = std::next (it, s_messages.size () - g_logConsole.windowHeight);
 
 	consoleSelect (&g_logConsole);
-#endif
 	while (it != std::end (s_messages))
 	{
 		std::fputs (s_colors[it->level], stdout);
