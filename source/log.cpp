@@ -124,10 +124,7 @@ void drawLog ()
 	};
 
 	auto it = std::begin (s_messages);
-#ifdef GEKKO
-	if (s_messages.size () > static_cast<unsigned> (maxLogs))
-		it = std::next (it, s_messages.size () - maxLogs);
-#else
+#ifndef GEKKO
 	if (s_messages.size () > static_cast<unsigned> (g_logConsole.windowHeight))
 		it = std::next (it, s_messages.size () - g_logConsole.windowHeight);
 
