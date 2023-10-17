@@ -33,6 +33,7 @@
 #endif
 
 #ifdef GEKKO
+#include <ogc/consol.h>
 #include <network.h>
 #else
 #include <arpa/inet.h>
@@ -208,11 +209,11 @@ void FtpServer::draw ()
 
 #ifndef GEKKO
 		consoleSelect (&g_statusConsole);
+#endif
 		std::printf ("\x1b[0;0H\x1b[32;1m%s \x1b[36;1m%s%s",
 		    STATUS_STRING,
 		    m_socket ? m_socket->sockName ().name () : "Waiting on WiFi",
 		    m_socket ? port : "");
-#endif
 
 #if !defined(NDS) && !defined(GEKKO)
 		char timeBuffer[16];
@@ -222,10 +223,8 @@ void FtpServer::draw ()
 		std::printf (" \x1b[37;1m%s", timeBuffer);
 #endif
 
-#ifndef GEKKO
 		std::fputs ("\x1b[K", stdout);
 		std::fflush (stdout);
-#endif
 	}
 
 	{
@@ -236,10 +235,15 @@ void FtpServer::draw ()
 		{
 #ifndef GEKKO
 			consoleSelect (&g_statusConsole);
-			std::printf ("\x1b[0;%uH\x1b[32;1m%s",
-			    static_cast<unsigned> (g_statusConsole.windowWidth - s_freeSpace.size () + 1),
-			    s_freeSpace.c_str ());
+			int cols = g_StatusConsole.windowWidth;
+#else
+			int cols = 0;
+			int rows = 0;
+			CON_GetMetrics(&cols, &rows);
 #endif
+			std::printf ("\x1b[0;%uH\x1b[32;1m%s",
+			    static_cast<unsigned> (cols - s_freeSpace.size () + 1),
+			    s_freeSpace.c_str ());
 			std::fflush (stdout);
 		}
 	}
