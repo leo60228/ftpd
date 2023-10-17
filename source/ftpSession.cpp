@@ -49,7 +49,7 @@ using namespace std::chrono_literals;
 #define lstat stat
 #endif
 
-#if defined(NDS) || defined(GEKKO)
+#ifdef NDS
 #define LOCKED(x) x
 #else
 #define LOCKED(x)                                                                                  \
@@ -299,7 +299,7 @@ FtpSession::FtpSession (FtpConfig &config_, UniqueSocket commandSocket_)
       m_devZero (false)
 {
 	{
-#if !defined(NDS) && !defined(GEKKO)
+#ifndef NDS
 		auto const lock = m_config.lockGuard ();
 #endif
 		if (m_config.user ().empty ())
@@ -322,7 +322,7 @@ FtpSession::FtpSession (FtpConfig &config_, UniqueSocket commandSocket_)
 
 bool FtpSession::dead ()
 {
-#if !defined(NDS) && !defined(GEKKO)
+#ifndef NDS
 	auto const lock = std::scoped_lock (m_lock);
 #endif
 	if (m_commandSocket || m_pasvSocket || m_dataSocket)
@@ -333,7 +333,7 @@ bool FtpSession::dead ()
 
 void FtpSession::draw ()
 {
-#if !defined(NDS) && !defined(GEKKO)
+#ifndef NDS
 	auto const lock = std::scoped_lock (m_lock);
 #endif
 
@@ -619,7 +619,7 @@ void FtpSession::setState (State const state_, bool const closePasv_, bool const
 	if (state_ == State::COMMAND)
 	{
 		{
-#if !defined(NDS) && !defined(GEKKO)
+#ifndef NDS
 			auto const lock = std::scoped_lock (m_lock);
 #endif
 
@@ -2214,7 +2214,7 @@ void FtpSession::PASS (char const *args_)
 	std::string pass;
 
 	{
-#if !defined(NDS) && !defined(GEKKO)
+#ifndef NDS
 		auto const lock = m_config.lockGuard ();
 #endif
 		user = m_config.user ();
@@ -2607,7 +2607,7 @@ void FtpSession::SITE (char const *args_)
 	if (::strcasecmp (command.c_str (), "USER") == 0)
 	{
 		{
-#if !defined(NDS) && !defined(GEKKO)
+#ifndef NDS
 			auto const lock = m_config.lockGuard ();
 #endif
 			m_config.setUser (arg);
@@ -2619,7 +2619,7 @@ void FtpSession::SITE (char const *args_)
 	else if (::strcasecmp (command.c_str (), "PASS") == 0)
 	{
 		{
-#if !defined(NDS) && !defined(GEKKO)
+#ifndef NDS
 			auto const lock = m_config.lockGuard ();
 #endif
 			m_config.setPass (arg);
@@ -2633,7 +2633,7 @@ void FtpSession::SITE (char const *args_)
 		bool error = false;
 
 		{
-#if !defined(NDS) && !defined(GEKKO)
+#ifndef NDS
 			auto const lock = m_config.lockGuard ();
 #endif
 			error = !m_config.setPort (arg);
@@ -2653,14 +2653,14 @@ void FtpSession::SITE (char const *args_)
 	{
 		if (arg == "0")
 		{
-#if !defined(NDS) && !defined(GEKKO)
+#ifndef NDS
 			auto const lock = m_config.lockGuard ();
 #endif
 			m_config.setGetMTime (false);
 		}
 		else if (arg == "1")
 		{
-#if !defined(NDS) && !defined(GEKKO)
+#ifndef NDS
 			auto const lock = m_config.lockGuard ();
 #endif
 			m_config.setGetMTime (true);
@@ -2677,7 +2677,7 @@ void FtpSession::SITE (char const *args_)
 		bool error;
 
 		{
-#if !defined(NDS) && !defined(GEKKO)
+#ifndef NDS
 			auto const lock = m_config.lockGuard ();
 #endif
 			error = !m_config.save (FTPDCONFIG);
@@ -2836,7 +2836,7 @@ void FtpSession::USER (char const *args_)
 	std::string pass;
 
 	{
-#if !defined(NDS) && !defined(GEKKO)
+#ifndef NDS
 		auto const lock = m_config.lockGuard ();
 #endif
 		user = m_config.user ();

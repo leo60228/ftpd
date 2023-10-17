@@ -75,7 +75,7 @@ struct Message
 /// \brief Log messages
 std::vector<Message> s_messages;
 
-#if !defined(NDS) && !defined(GEKKO)
+#ifndef NDS
 /// \brief Log lock
 platform::Mutex s_lock;
 #endif
@@ -83,7 +83,7 @@ platform::Mutex s_lock;
 
 void drawLog ()
 {
-#if !defined(NDS) && !defined(GEKKO)
+#ifndef NDS
 	auto const lock = std::scoped_lock (s_lock);
 #endif
 
@@ -165,7 +165,7 @@ void drawLog ()
 #ifndef CLASSIC
 std::string getLog ()
 {
-#if !defined(NDS) && !defined(GEKKO)
+#ifndef NDS
 	auto const lock = std::scoped_lock (s_lock);
 #endif
 
@@ -249,14 +249,14 @@ void addLog (LogLevel const level_, char const *const fmt_, va_list ap_)
 		return;
 #endif
 
-#if !defined(NDS) && !defined(GEKKO)
+#ifndef NDS
 	thread_local
 #endif
 	    static char buffer[1024];
 
 	std::vsnprintf (buffer, sizeof (buffer), fmt_, ap_);
 
-#if !defined(NDS) && !defined(GEKKO)
+#ifndef NDS
 	auto const lock = std::scoped_lock (s_lock);
 #endif
 #ifndef NDEBUG
@@ -284,7 +284,7 @@ void addLog (LogLevel const level_, std::string_view const message_)
 			c = '?';
 	}
 
-#if !defined(NDS) && !defined(GEKKO)
+#ifndef NDS
 	auto const lock = std::scoped_lock (s_lock);
 #endif
 #ifndef NDEBUG

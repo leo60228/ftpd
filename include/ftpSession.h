@@ -205,7 +205,7 @@ private:
 	/// \brief Transfer upload
 	bool storeTransfer ();
 
-#if !defined(NDS) && !defined(GEKKO)
+#ifndef NDS
 	/// \brief Mutex
 	platform::Mutex m_lock;
 #endif

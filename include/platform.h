@@ -107,7 +107,7 @@ struct steady_clock
 using steady_clock = std::chrono::steady_clock;
 #endif
 
-#if !defined(NDS) && !defined(GEKKO)
+#ifndef NDS
 /// \brief Platform thread
 class Thread
 {

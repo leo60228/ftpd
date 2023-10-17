@@ -88,7 +88,7 @@ private:
 	/// \brief Thread entry point
 	void threadFunc ();
 
-#if !defined(NDS) && !defined(GEKKO)
+#ifndef NDS
 	/// \brief Thread
 	platform::Thread m_thread;
 

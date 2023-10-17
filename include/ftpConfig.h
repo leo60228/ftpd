@@ -43,7 +43,7 @@ public:
 	/// \param path_ Path to config file
 	static UniqueFtpConfig load (char const *path_);
 
-#if !defined(NDS) && !defined(GEKKO)
+#ifndef NDS
 	std::scoped_lock<platform::Mutex> lockGuard ();
 #endif
 
@@ -116,7 +116,7 @@ public:
 private:
 	FtpConfig ();
 
-#if !defined(NDS) && !defined(GEKKO)
+#ifndef NDS
 	/// \brief Mutex
 	mutable platform::Mutex m_lock;
 #endif
